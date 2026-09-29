@@ -1,45 +1,59 @@
-# [Project name]
+# FixForge
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+FixForge is an autonomous software repair platform foundation that records repair jobs, exposes execution evidence, and will grow into a bounded self-correcting agent loop.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `artifacts/fixforge: web` — React/Vite frontend at `/`
+- `artifacts/api-server: API Server` — Node/Express API under `/api`
+- `FixForge AI Agent` — FastAPI internal service on port 8000
+- `pnpm run typecheck` — full TypeScript check
+- `pnpm --filter @workspace/api-server run build` — API bundle check
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas
+- `PYTHONPATH=ai-agent python -m compileall -q ai-agent` — Python syntax check
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- pnpm workspace, Node.js 24, TypeScript 5.9
+- Frontend: React, Vite, Tailwind CSS, Wouter, TanStack React Query
+- API: Express 5, JavaScript/TypeScript source, generated Zod validation
+- Database: SQLite via Node 24 `node:sqlite`, stored at `database/dev.db`
+- AI service: Python 3.13, FastAPI, Pydantic, LangGraph dependency
+- API contracts: OpenAPI + Orval
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/fixforge/` — user-facing web app
+- `artifacts/api-server/` — shared Node API
+- `lib/api-spec/openapi.yaml` — API source of truth
+- `lib/api-client-react/` — generated React Query client
+- `lib/api-zod/` — generated request/response schemas
+- `lib/db/` — SQLite initialization, schema, and query handles
+- `ai-agent/` — Python agent service boundary
+- `docs` and top-level markdown files — architecture, security, API, and development notes
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Keep the Node API independent from LangGraph internals; communicate with the Python service over HTTP.
+- Treat generated code as the API contract boundary; server routes validate both input and output.
+- Use SQLite for the local-first milestone, matching the product specification instead of silently adopting the scaffold's original database choice.
+- Seed only one small demo project and repair job so the dashboard is demonstrable without implying the repair engine is complete.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Milestone 1 provides service health, project records, repair-job records, dashboard metrics, and activity. The repair engine, Docker sandbox, live WebSocket timeline, and authentication are intentionally later milestones.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+None recorded.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- After changing `lib/api-spec/openapi.yaml`, run codegen before using new hooks or schemas.
+- The first SQLite connection initializes the local schema and seeds the demo data when empty.
+- `VERIFIED` must only be emitted after actual sandbox execution evidence is implemented.
 
 ## Pointers
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- See `.local/skills/pnpm-workspace/SKILL.md` for workspace conventions.
+- See `README.md` for the Milestone 1 scope.

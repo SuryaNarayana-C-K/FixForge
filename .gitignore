@@ -10,6 +10,13 @@ out-tsc
 
 # dependencies
 node_modules
+.pythonlibs
+__pycache__/
+*.py[cod]
+database/*.db
+database/*.db-shm
+database/*.db-wal
+.env
 
 # IDEs and editors
 /.idea

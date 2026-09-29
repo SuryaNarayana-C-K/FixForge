@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: FixForge overview data
+  - name: projects
+    description: Repair projects
+  - name: repairs
+    description: Repair jobs and their progress
 paths:
   /healthz:
     get:
@@ -24,7 +30,164 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /services/health:
+    get:
+      operationId: getServicesHealth
+      tags: [health]
+      summary: Get service health
+      description: Returns the health of the Node API, database, and AI service.
+      responses:
+        "200":
+          description: Service health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServicesHealth"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary
+      responses:
+        "200":
+          description: Dashboard metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /activity:
+    get:
+      operationId: getActivity
+      tags: [dashboard]
+      summary: Get recent activity
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 8
+      responses:
+        "200":
+          description: Recent activity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityEvent"
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List repair projects
+      responses:
+        "200":
+          description: Project list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a repair project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectInput"
+      responses:
+        "201":
+          description: Created project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a repair project
+      parameters:
+        - $ref: "#/components/parameters/ProjectId"
+      responses:
+        "200":
+          description: Repair project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          description: Project not found
+  /repairs:
+    get:
+      operationId: listRepairs
+      tags: [repairs]
+      summary: List repair jobs
+      responses:
+        "200":
+          description: Repair job list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RepairJob"
+    post:
+      operationId: createRepair
+      tags: [repairs]
+      summary: Create a repair job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairInput"
+      responses:
+        "201":
+          description: Created repair job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepairJob"
+  /repairs/{repairId}:
+    get:
+      operationId: getRepair
+      tags: [repairs]
+      summary: Get a repair job
+      parameters:
+        - $ref: "#/components/parameters/RepairId"
+      responses:
+        "200":
+          description: Repair job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepairJob"
+        "404":
+          description: Repair job not found
 components:
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RepairId:
+      name: repairId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +196,158 @@ components:
           type: string
       required:
         - status
+    ServiceStatus:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [operational, degraded, offline]
+        latencyMs:
+          type: ["number", "null"]
+        detail:
+          type: string
+      required: [name, status, latencyMs, detail]
+    ServicesHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [operational, degraded, offline]
+        checkedAt:
+          type: string
+          format: date-time
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceStatus"
+      required: [status, checkedAt, services]
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        repository:
+          type: string
+        language:
+          type: string
+        testFramework:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [ready, analyzing, repairing, verified, failed]
+        repairCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, repository, language, testFramework, status, repairCount, createdAt, updatedAt]
+    ProjectInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        repository:
+          type: string
+          minLength: 1
+        language:
+          type: string
+          default: Python
+        testFramework:
+          type: ["string", "null"]
+      required: [name, repository]
+    RepairJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        issue:
+          type: string
+        model:
+          type: string
+        verificationLevel:
+          type: string
+          enum: [quick, standard, full]
+        maxIterations:
+          type: integer
+        status:
+          type: string
+          enum: [queued, analyzing, patching, testing, self_correcting, verifying, verified, failed, timeout, cancelled]
+        iteration:
+          type: integer
+        testsPassed:
+          type: integer
+        testsTotal:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, projectId, issue, model, verificationLevel, maxIterations, status, iteration, testsPassed, testsTotal, createdAt, updatedAt]
+    RepairInput:
+      type: object
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        issue:
+          type: string
+          minLength: 1
+        model:
+          type: string
+        verificationLevel:
+          type: string
+          enum: [quick, standard, full]
+        maxIterations:
+          type: integer
+          minimum: 1
+          maximum: 10
+      required: [projectId, issue, model, verificationLevel, maxIterations]
+    DashboardSummary:
+      type: object
+      properties:
+        activeRepairs:
+          type: integer
+        completedRepairs:
+          type: integer
+        failedRepairs:
+          type: integer
+        successRate:
+          type: number
+        averageIterations:
+          type: number
+        averageRepairTimeSeconds:
+          type: number
+      required: [activeRepairs, completedRepairs, failedRepairs, successRate, averageIterations, averageRepairTimeSeconds]
+    ActivityEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        event:
+          type: string
+        status:
+          type: string
+        message:
+          type: string
+        repairId:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, event, status, message, repairId, createdAt]
 
