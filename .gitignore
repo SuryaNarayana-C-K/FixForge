@@ -14,6 +14,8 @@ node_modules
 __pycache__/
 *.py[cod]
 database/*.db
+database/**/*.db
+database/backups/
 database/*.db-shm
 database/*.db-wal
 .env
