@@ -23,8 +23,8 @@ RUN pip install --no-cache-dir --break-system-packages \
     uvicorn>=0.30.0 \
     pydantic>=2.8.0
 
-# Copy pre-packaged sandbox image for offline daemon provisioning
-COPY fixforge-sandbox.tar /app/fixforge-sandbox.tar
+# Copy pre-packaged sandbox image for offline daemon provisioning (optional)
+COPY fixforge-sandbox.tar* /app/
 
 # Copy application source code and entrypoint
 COPY app /app/app
